@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tasks - Custom CRM</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; color: #1e293b; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    .subtitle { color: #64748b; margin-bottom: 24px; }
+
+    nav { background: #1e293b; padding: 16px 0; margin-bottom: 24px; }
+    nav .container { display: flex; align-items: center; gap: 32px; }
+    nav a { color: #94a3b8; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+    nav a:hover, nav a.active { color: #fff; }
+    .logo { color: #fff; font-weight: 700; font-size: 18px; }
+
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 24px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .card h2 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .count { background: #e2e8f0; color: #475569; font-size: 12px; padding: 2px 8px; border-radius: 12px; }
+
+    .btn { padding: 10px 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-success { background: #22c55e; color: #fff; }
+    .btn-success:hover { background: #16a34a; }
+    .btn-warning { background: #f59e0b; color: #fff; }
+    .btn-warning:hover { background: #d97706; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-group { display: flex; gap: 8px; }
+
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; padding: 12px 16px; background: #f8fafc; color: #64748b; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    tr:hover { background: #f8fafc; }
+    tr.completed { opacity: 0.6; }
+    tr.completed td { text-decoration: line-through; }
+    tr.completed td:last-child { text-decoration: none; }
+    .id-cell { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #64748b; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+    .subject-cell { font-weight: 500; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-yellow { background: #fef3c7; color: #b45309; }
+    .badge-red { background: #fee2e2; color: #dc2626; }
+    .badge-gray { background: #f1f5f9; color: #475569; }
+    .empty { text-align: center; padding: 48px; color: #94a3b8; }
+
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: #fff; padding: 12px 20px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
+    .toast.show { opacity: 1; }
+    .toast.success { background: #22c55e; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <span class="logo">Custom CRM</span>
+      <a href="/">Dashboard</a>
+      <a href="/contacts.html">Contacts</a>
+      <a href="/companies.html">Companies</a>
+      <a href="/tasks.html" class="active">Tasks</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Tasks</h1>
+    <p class="subtitle">Tasks created from Genesy sequences</p>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Task List <span class="count" id="count">0</span></h2>
+        <div class="btn-group">
+          <button class="btn btn-success" onclick="createTestTask()">Create Test Task</button>
+          <button class="btn btn-primary" onclick="refresh()">Refresh</button>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Subject</th>
+              <th>Type</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Contact</th>
+              <th>Company</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="8" class="empty">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let tasks = [];
+
+    async function refresh() {
+      tasks = await fetch('/api/tasks').then(r => r.json());
+      document.getElementById('count').textContent = tasks.length;
+
+      if (tasks.length === 0) {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="empty">No tasks yet. Click "Create Test Task" to add one.</td></tr>';
+        return;
+      }
+
+      document.getElementById('tableBody').innerHTML = tasks.map(t => {
+        const dueDate = t.dueDate ? new Date(t.dueDate) : null;
+        const isOverdue = dueDate && !t.completed && dueDate < new Date();
+        const dueDateStr = dueDate ? dueDate.toLocaleDateString() : '-';
+
+        return `
+          <tr class="${t.completed ? 'completed' : ''}">
+            <td class="id-cell" title="${t.id}">${t.id.substring(0, 8)}...</td>
+            <td class="subject-cell">${t.subject}</td>
+            <td>${t.type ? `<span class="badge badge-gray">${t.type}</span>` : '-'}</td>
+            <td>${isOverdue ? `<span class="badge badge-red">${dueDateStr}</span>` : dueDateStr}</td>
+            <td>${t.completed ? '<span class="badge badge-green">Completed</span>' : '<span class="badge badge-yellow">Pending</span>'}</td>
+            <td class="id-cell">${t.contactId ? t.contactId.substring(0, 8) + '...' : '-'}</td>
+            <td class="id-cell">${t.companyId ? t.companyId.substring(0, 8) + '...' : '-'}</td>
+            <td>
+              ${!t.completed ? `<button class="btn btn-sm btn-warning" onclick="completeTask('${t.id}')">Complete</button>` : '<span class="badge badge-green">Done</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      showToast('Tasks refreshed', 'success');
+    }
+
+    async function createTestTask() {
+      const config = await fetch('/api/config').then(r => r.json());
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      await fetch('/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', [config.apiKeyHeader]: config.apiKey },
+        body: JSON.stringify({
+          subject: 'Follow up with prospect',
+          description: 'Send a follow-up email to discuss next steps',
+          type: 'follow_up',
+          dueDate: tomorrow.toISOString(),
+        })
+      });
+
+      showToast('Created test task', 'success');
+      refresh();
+    }
+
+    async function completeTask(taskId) {
+      const config = await fetch('/api/config').then(r => r.json());
+      await fetch(`/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', [config.apiKeyHeader]: config.apiKey },
+        body: JSON.stringify({ completed: true })
+      });
+
+      showToast('Task completed', 'success');
+      refresh();
+    }
+
+    function showToast(message, type = '') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast show ' + type;
+      setTimeout(() => toast.className = 'toast', 3000);
+    }
+
+    refresh();
+  </script>
+</body>
+</html>

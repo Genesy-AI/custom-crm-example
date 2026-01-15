@@ -1,0 +1,20 @@
+{
+  "name": "custom-crm-test",
+  "version": "1.0.0",
+  "description": "Test server for Custom CRM integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "setup": "prisma generate && prisma db push"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "express": "^5.2.1",
+    "prisma": "^5.22.0"
+  }
+}

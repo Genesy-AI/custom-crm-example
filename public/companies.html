@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Companies - Custom CRM</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; color: #1e293b; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    .subtitle { color: #64748b; margin-bottom: 24px; }
+
+    nav { background: #1e293b; padding: 16px 0; margin-bottom: 24px; }
+    nav .container { display: flex; align-items: center; gap: 32px; }
+    nav a { color: #94a3b8; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+    nav a:hover, nav a.active { color: #fff; }
+    .logo { color: #fff; font-weight: 700; font-size: 18px; }
+
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 24px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .card h2 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .count { background: #e2e8f0; color: #475569; font-size: 12px; padding: 2px 8px; border-radius: 12px; }
+
+    .btn { padding: 10px 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-success { background: #22c55e; color: #fff; }
+    .btn-success:hover { background: #16a34a; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-group { display: flex; gap: 8px; }
+
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; padding: 12px 16px; background: #f8fafc; color: #64748b; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    tr:hover { background: #f8fafc; }
+    .id-cell { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #64748b; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+    .name-cell { font-weight: 500; }
+    .domain-cell a { color: #3b82f6; text-decoration: none; }
+    .domain-cell a:hover { text-decoration: underline; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+    .badge-purple { background: #f3e8ff; color: #7c3aed; }
+    .badge-gray { background: #f1f5f9; color: #475569; }
+    .empty { text-align: center; padding: 48px; color: #94a3b8; }
+
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: #fff; padding: 12px 20px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
+    .toast.show { opacity: 1; }
+    .toast.success { background: #22c55e; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <span class="logo">Custom CRM</span>
+      <a href="/">Dashboard</a>
+      <a href="/contacts.html">Contacts</a>
+      <a href="/companies.html" class="active">Companies</a>
+      <a href="/tasks.html">Tasks</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Companies</h1>
+    <p class="subtitle">All companies synced from Genesy</p>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Company List <span class="count" id="count">0</span></h2>
+        <div class="btn-group">
+          <button class="btn btn-success" onclick="createTestCompanies()">Create Test Companies</button>
+          <button class="btn btn-primary" onclick="refresh()">Refresh</button>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>CRM ID</th>
+              <th>External ID</th>
+              <th>Name</th>
+              <th>Domain</th>
+              <th>Industry</th>
+              <th>Contacts</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="7" class="empty">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let companies = [];
+
+    async function refresh() {
+      companies = await fetch('/api/companies').then(r => r.json());
+      document.getElementById('count').textContent = companies.length;
+
+      if (companies.length === 0) {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="empty">No companies yet. Click "Create Test Companies" to add some.</td></tr>';
+        return;
+      }
+
+      document.getElementById('tableBody').innerHTML = companies.map(c => `
+        <tr>
+          <td class="id-cell" title="${c.id}">${c.id.substring(0, 8)}...</td>
+          <td><span class="badge badge-purple">${c.externalId}</span></td>
+          <td class="name-cell">${c.name || '-'}</td>
+          <td class="domain-cell">${c.domain ? `<a href="https://${c.domain}" target="_blank">${c.domain}</a>` : '-'}</td>
+          <td>${c.industry ? `<span class="badge badge-gray">${c.industry}</span>` : '-'}</td>
+          <td>${c.associations?.length || 0}</td>
+          <td><a href="/view/company/${c.id}" class="btn btn-sm btn-primary">View</a></td>
+        </tr>
+      `).join('');
+
+      showToast('Companies refreshed', 'success');
+    }
+
+    async function createTestCompanies() {
+      const payload = {
+        companies: [
+          { externalId: String(Date.now()), name: 'Acme Corporation', domain: 'acme.com', industry: 'Technology' },
+          { externalId: String(Date.now() + 1), name: 'Tech Innovations Ltd', domain: 'techinnovations.io', industry: 'Software' },
+          { externalId: String(Date.now() + 2), name: 'Global Solutions Inc', domain: 'globalsolutions.com', industry: 'Consulting' },
+        ]
+      };
+
+      const config = await fetch('/api/config').then(r => r.json());
+      await fetch('/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', [config.apiKeyHeader]: config.apiKey },
+        body: JSON.stringify(payload)
+      });
+
+      showToast('Created 3 test companies', 'success');
+      refresh();
+    }
+
+    function showToast(message, type = '') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast show ' + type;
+      setTimeout(() => toast.className = 'toast', 3000);
+    }
+
+    refresh();
+  </script>
+</body>
+</html>

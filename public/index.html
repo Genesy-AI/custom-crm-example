@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom CRM Test Server</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; color: #1e293b; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    .subtitle { color: #64748b; margin-bottom: 24px; }
+
+    /* Navigation */
+    nav { background: #1e293b; padding: 16px 0; margin-bottom: 24px; }
+    nav .container { display: flex; align-items: center; gap: 32px; }
+    nav a { color: #94a3b8; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+    nav a:hover, nav a.active { color: #fff; }
+    .logo { color: #fff; font-weight: 700; font-size: 18px; }
+
+    /* Cards */
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 24px; }
+    .card h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .card h2 .count { background: #e2e8f0; color: #475569; font-size: 12px; padding: 2px 8px; border-radius: 12px; }
+
+    /* Config display */
+    .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .config-item { background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .config-item label { display: block; font-size: 12px; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .config-item code { font-family: 'SF Mono', Monaco, monospace; font-size: 13px; color: #0f172a; word-break: break-all; }
+
+    /* Buttons */
+    .btn { padding: 10px 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-success { background: #22c55e; color: #fff; }
+    .btn-success:hover { background: #16a34a; }
+    .btn-secondary { background: #e2e8f0; color: #475569; }
+    .btn-secondary:hover { background: #cbd5e1; }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Stats */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
+    .stat-value { font-size: 32px; font-weight: 700; color: #0f172a; }
+    .stat-label { font-size: 14px; color: #64748b; margin-top: 4px; }
+    .stat a { color: inherit; text-decoration: none; }
+    .stat a:hover .stat-value { color: #3b82f6; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: #fff; padding: 12px 20px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
+    .toast.show { opacity: 1; }
+    .toast.error { background: #ef4444; }
+    .toast.success { background: #22c55e; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <span class="logo">Custom CRM</span>
+      <a href="/" class="active">Dashboard</a>
+      <a href="/contacts.html">Contacts</a>
+      <a href="/companies.html">Companies</a>
+      <a href="/tasks.html">Tasks</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Custom CRM Test Server</h1>
+    <p class="subtitle">A test implementation for Genesy Custom CRM integration</p>
+
+    <div class="stats">
+      <div class="stat">
+        <a href="/contacts.html">
+          <div class="stat-value" id="contactCount">-</div>
+          <div class="stat-label">Contacts</div>
+        </a>
+      </div>
+      <div class="stat">
+        <a href="/companies.html">
+          <div class="stat-value" id="companyCount">-</div>
+          <div class="stat-label">Companies</div>
+        </a>
+      </div>
+      <div class="stat">
+        <a href="/tasks.html">
+          <div class="stat-value" id="taskCount">-</div>
+          <div class="stat-label">Tasks</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Configuration</h2>
+      <div class="config-grid" id="config">Loading...</div>
+    </div>
+
+    <div class="card">
+      <h2>Actions</h2>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="refresh()">Refresh Stats</button>
+        <button class="btn btn-danger" onclick="resetDB()">Reset Database</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>API Endpoints</h2>
+      <div class="config-grid">
+        <div class="config-item"><label>Health</label><code>GET /health</code></div>
+        <div class="config-item"><label>Create Contacts</label><code>POST /contacts</code></div>
+        <div class="config-item"><label>Update Contacts</label><code>PUT /contacts</code></div>
+        <div class="config-item"><label>Sync Contacts</label><code>POST /contacts/sync</code></div>
+        <div class="config-item"><label>Batch Contacts</label><code>POST /contacts/batch</code></div>
+        <div class="config-item"><label>Create Companies</label><code>POST /companies</code></div>
+        <div class="config-item"><label>Update Companies</label><code>PUT /companies</code></div>
+        <div class="config-item"><label>Sync Companies</label><code>POST /companies/sync</code></div>
+        <div class="config-item"><label>Batch Companies</label><code>POST /companies/batch</code></div>
+        <div class="config-item"><label>Associations</label><code>POST /associations</code></div>
+        <div class="config-item"><label>Create Task</label><code>POST /tasks</code></div>
+        <div class="config-item"><label>Get Task</label><code>GET /tasks/:id</code></div>
+        <div class="config-item"><label>Complete Task</label><code>PATCH /tasks/:id</code></div>
+        <div class="config-item"><label>Batch Tasks</label><code>POST /tasks/batch</code></div>
+        <div class="config-item"><label>Complete Batch</label><code>PATCH /tasks/batch</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    async function refresh() {
+      const [contacts, companies, tasks, config] = await Promise.all([
+        fetch('/api/contacts').then(r => r.json()),
+        fetch('/api/companies').then(r => r.json()),
+        fetch('/api/tasks').then(r => r.json()),
+        fetch('/api/config').then(r => r.json())
+      ]);
+
+      document.getElementById('contactCount').textContent = contacts.length;
+      document.getElementById('companyCount').textContent = companies.length;
+      document.getElementById('taskCount').textContent = tasks.length;
+
+      document.getElementById('config').innerHTML = `
+        <div class="config-item"><label>Base URL</label><code>${location.origin}</code></div>
+        <div class="config-item"><label>API Key</label><code>${config.apiKey}</code></div>
+        <div class="config-item"><label>API Key Header</label><code>${config.apiKeyHeader}</code></div>
+        <div class="config-item"><label>Contact Link Template</label><code>${config.contactLinkTemplate}</code></div>
+        <div class="config-item"><label>Company Link Template</label><code>${config.companyLinkTemplate}</code></div>
+      `;
+
+      showToast('Data refreshed', 'success');
+    }
+
+    async function resetDB() {
+      if (!confirm('Are you sure you want to reset the database? This will delete all data.')) return;
+      await fetch('/api/reset', { method: 'DELETE' });
+      showToast('Database reset', 'success');
+      refresh();
+    }
+
+    function showToast(message, type = '') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast show ' + type;
+      setTimeout(() => toast.className = 'toast', 3000);
+    }
+
+    refresh();
+  </script>
+</body>
+</html>

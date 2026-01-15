@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Contact {
+  id           String   @id @default(uuid())
+  externalId   String   @unique
+  email        String?
+  firstName    String?
+  lastName     String?
+  phone        String?
+  company      String?
+  title        String?
+  linkedinUrl  String?
+  data         String?  // JSON string for extra fields
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  associations Association[]
+}
+
+model Company {
+  id          String   @id @default(uuid())
+  externalId  String   @unique
+  name        String?
+  domain      String?
+  industry    String?
+  data        String?  // JSON string for extra fields
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  associations Association[]
+}
+
+model Association {
+  id        String  @id @default(uuid())
+  contactId String
+  companyId String
+  contact   Contact @relation(fields: [contactId], references: [id])
+  company   Company @relation(fields: [companyId], references: [id])
+
+  @@unique([contactId, companyId])
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  subject     String
+  description String?
+  type        String?
+  ownerId     String?
+  dueDate     DateTime?
+  contactId   String?
+  companyId   String?
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
