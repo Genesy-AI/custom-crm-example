@@ -23,6 +23,7 @@ The server will start at `http://localhost:3456`
 - **Companies Management**: Create, update, sync, and batch fetch companies
 - **Associations**: Link contacts to companies
 - **Tasks**: Create and manage tasks from Genesy sequences
+- **Activities**: Capture LinkedIn and email activities synced from Genesy
 - **CRM Record Links**: Deep links to view records directly in the CRM
 - **Web Dashboard**: Visual interface to view and manage all data
 
@@ -214,6 +215,30 @@ curl -X PATCH http://localhost:3456/tasks/task-uuid \
   -H "Content-Type: application/json" \
   -H "x-api-key: test-api-key-123" \
   -d '{ "completed": true }'
+```
+
+### Activities
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/activities` | Create an activity |
+
+#### Create Activity
+
+```bash
+curl -X POST http://localhost:3456/activities \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: test-api-key-123" \
+  -d '{
+    "type": "EMAIL",
+    "subject": "Re: Intro",
+    "body": "<div>Thanks for the quick reply!</div>",
+    "direction": "OUTBOUND",
+    "occurredAt": "2024-12-31T10:00:00Z",
+    "contactId": "contact-uuid",
+    "companyId": "company-uuid",
+    "metadata": { "sequenceIndex": 2 }
+  }'
 ```
 
 ## CRM Record Links

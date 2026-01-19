@@ -64,6 +64,7 @@
       <a href="/contacts.html">Contacts</a>
       <a href="/companies.html">Companies</a>
       <a href="/tasks.html">Tasks</a>
+      <a href="/activities.html">Activities</a>
     </div>
   </nav>
 
@@ -88,6 +89,12 @@
         <a href="/tasks.html">
           <div class="stat-value" id="taskCount">-</div>
           <div class="stat-label">Tasks</div>
+        </a>
+      </div>
+      <div class="stat">
+        <a href="/activities.html">
+          <div class="stat-value" id="activityCount">-</div>
+          <div class="stat-label">Activities</div>
         </a>
       </div>
     </div>
@@ -123,6 +130,7 @@
         <div class="config-item"><label>Complete Task</label><code>PATCH /tasks/:id</code></div>
         <div class="config-item"><label>Batch Tasks</label><code>POST /tasks/batch</code></div>
         <div class="config-item"><label>Complete Batch</label><code>PATCH /tasks/batch</code></div>
+        <div class="config-item"><label>Create Activity</label><code>POST /activities</code></div>
       </div>
     </div>
   </div>
@@ -131,16 +139,18 @@
 
   <script>
     async function refresh() {
-      const [contacts, companies, tasks, config] = await Promise.all([
+      const [contacts, companies, tasks, activities, config] = await Promise.all([
         fetch('/api/contacts').then(r => r.json()),
         fetch('/api/companies').then(r => r.json()),
         fetch('/api/tasks').then(r => r.json()),
+        fetch('/api/activities').then(r => r.json()),
         fetch('/api/config').then(r => r.json())
       ]);
 
       document.getElementById('contactCount').textContent = contacts.length;
       document.getElementById('companyCount').textContent = companies.length;
       document.getElementById('taskCount').textContent = tasks.length;
+      document.getElementById('activityCount').textContent = activities.length;
 
       document.getElementById('config').innerHTML = `
         <div class="config-item"><label>Base URL</label><code>${location.origin}</code></div>

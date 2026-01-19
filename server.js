@@ -401,6 +401,38 @@ app.patch('/tasks/batch', async (req, res) => {
   }
 });
 
+// ============== ACTIVITIES ==============
+
+// POST /activities - Create activity
+app.post('/activities', async (req, res) => {
+  try {
+    const { type } = req.body;
+    if (!type) {
+      return res.status(400).json({ error: 'Activity type is required' });
+    }
+
+    const activity = await prisma.activity.create({
+      data: {
+        type,
+        subject: req.body.subject,
+        body: req.body.body,
+        direction: req.body.direction,
+        ownerId: req.body.ownerId,
+        occurredAt: req.body.occurredAt ? new Date(req.body.occurredAt) : null,
+        contactId: req.body.contactId,
+        companyId: req.body.companyId,
+        metadata: req.body.metadata ? JSON.stringify(req.body.metadata) : null,
+      },
+    });
+
+    console.log(`Created activity: ${activity.id}`);
+    res.json(activity);
+  } catch (error) {
+    console.error('Error creating activity:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============== UI/DEBUG ENDPOINTS ==============
 
 app.get('/api/contacts', async (req, res) => {
@@ -422,9 +454,17 @@ app.get('/api/tasks', async (req, res) => {
   res.json(tasks);
 });
 
+app.get('/api/activities', async (req, res) => {
+  const activities = await prisma.activity.findMany({
+    orderBy: { occurredAt: 'desc' },
+  });
+  res.json(activities);
+});
+
 app.delete('/api/reset', async (req, res) => {
   await prisma.association.deleteMany();
   await prisma.task.deleteMany();
+  await prisma.activity.deleteMany();
   await prisma.contact.deleteMany();
   await prisma.company.deleteMany();
   console.log('Database reset');
@@ -566,5 +606,6 @@ app.listen(PORT, HOST, () => {
   console.log(`  POST /companies/batch  - Fetch companies (by crmId)`);
   console.log(`  POST /associations     - Create associations`);
   console.log(`  POST /tasks            - Create task`);
+  console.log(`  POST /activities       - Create activity`);
   console.log(`==========================================\n`);
 });
