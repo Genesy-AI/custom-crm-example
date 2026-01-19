@@ -401,6 +401,43 @@ app.patch('/tasks/batch', async (req, res) => {
   }
 });
 
+// ============== ACTIVITIES ==============
+
+// POST /activities - Create activity
+app.post('/activities', async (req, res) => {
+  try {
+    const activity = await prisma.activity.create({
+      data: {
+        type: req.body.type,
+        subject: req.body.subject,
+        body: req.body.body,
+        direction: req.body.direction,
+        ownerId: req.body.ownerId,
+        occurredAt: req.body.occurredAt ? new Date(req.body.occurredAt) : null,
+        contactId: req.body.contactId,
+        companyId: req.body.companyId,
+        metadata: req.body.metadata ? JSON.stringify(req.body.metadata) : null,
+      },
+    });
+    console.log(`Created activity: ${activity.id} (${activity.type})`);
+    res.json(activity);
+  } catch (error) {
+    console.error('Error creating activity:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /activities/:id - Get activity
+app.get('/activities/:id', async (req, res) => {
+  try {
+    const activity = await prisma.activity.findUnique({ where: { id: req.params.id } });
+    if (!activity) return res.status(404).json({ error: 'Activity not found' });
+    res.json(activity);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============== UI/DEBUG ENDPOINTS ==============
 
 app.get('/api/contacts', async (req, res) => {
@@ -422,9 +459,17 @@ app.get('/api/tasks', async (req, res) => {
   res.json(tasks);
 });
 
+app.get('/api/activities', async (req, res) => {
+  const activities = await prisma.activity.findMany({
+    orderBy: { occurredAt: 'desc' },
+  });
+  res.json(activities);
+});
+
 app.delete('/api/reset', async (req, res) => {
   await prisma.association.deleteMany();
   await prisma.task.deleteMany();
+  await prisma.activity.deleteMany();
   await prisma.contact.deleteMany();
   await prisma.company.deleteMany();
   console.log('Database reset');
@@ -454,7 +499,29 @@ app.get('/view/contact/:id', async (req, res) => {
       return res.status(404).send('<h1>Contact not found</h1>');
     }
 
+    const activities = await prisma.activity.findMany({
+      where: { contactId: req.params.id },
+      orderBy: { occurredAt: 'desc' },
+    });
+
     const data = contact.data ? JSON.parse(contact.data) : {};
+
+    const activitiesHtml = activities.length ? `
+      <h3>Activities (${activities.length})</h3>
+      <div class="activities">
+        ${activities.map(a => `
+          <div class="activity ${a.direction === 'INBOUND' ? 'inbound' : 'outbound'}">
+            <div class="activity-header">
+              <span class="activity-type">${a.type}</span>
+              <span class="activity-direction">${a.direction || '-'}</span>
+              <span class="activity-date">${a.occurredAt ? new Date(a.occurredAt).toLocaleString() : '-'}</span>
+            </div>
+            <div class="activity-subject">${a.subject || '-'}</div>
+            <div class="activity-body">${a.body || ''}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : '<h3>Activities</h3><p>No activities yet.</p>';
 
     res.send(`
       <!DOCTYPE html>
@@ -470,6 +537,16 @@ app.get('/view/contact/:id', async (req, res) => {
           .back { margin-top: 20px; }
           a { color: #007bff; }
           pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; overflow: auto; }
+          .activities { margin-top: 10px; }
+          .activity { margin: 10px 0; padding: 15px; border-radius: 8px; border-left: 4px solid #ccc; background: #fafafa; }
+          .activity.outbound { border-left-color: #28a745; background: #f0fff4; }
+          .activity.inbound { border-left-color: #007bff; background: #f0f8ff; }
+          .activity-header { display: flex; gap: 10px; margin-bottom: 8px; font-size: 0.85em; }
+          .activity-type { font-weight: bold; background: #e9ecef; padding: 2px 8px; border-radius: 4px; }
+          .activity-direction { color: #666; }
+          .activity-date { color: #999; margin-left: auto; }
+          .activity-subject { font-weight: 600; margin-bottom: 5px; }
+          .activity-body { color: #555; font-size: 0.95em; white-space: pre-wrap; max-height: 200px; overflow: auto; }
         </style>
       </head>
       <body>
@@ -483,6 +560,7 @@ app.get('/view/contact/:id', async (req, res) => {
         <div class="field"><span class="label">Title:</span> <span class="value">${contact.title || '-'}</span></div>
         <div class="field"><span class="label">LinkedIn:</span> <span class="value">${contact.linkedinUrl ? `<a href="${contact.linkedinUrl}" target="_blank">${contact.linkedinUrl}</a>` : '-'}</span></div>
         ${contact.associations.length ? `<div class="field"><span class="label">Associated Companies:</span> <span class="value">${contact.associations.map(a => `<a href="/view/company/${a.company.id}">${a.company.name || a.company.id}</a>`).join(', ')}</span></div>` : ''}
+        ${activitiesHtml}
         <h3>All Data</h3>
         <pre>${JSON.stringify(data, null, 2)}</pre>
         <div class="back"><a href="/">← Back to Dashboard</a></div>
@@ -506,7 +584,29 @@ app.get('/view/company/:id', async (req, res) => {
       return res.status(404).send('<h1>Company not found</h1>');
     }
 
+    const activities = await prisma.activity.findMany({
+      where: { companyId: req.params.id },
+      orderBy: { occurredAt: 'desc' },
+    });
+
     const data = company.data ? JSON.parse(company.data) : {};
+
+    const activitiesHtml = activities.length ? `
+      <h3>Activities (${activities.length})</h3>
+      <div class="activities">
+        ${activities.map(a => `
+          <div class="activity ${a.direction === 'INBOUND' ? 'inbound' : 'outbound'}">
+            <div class="activity-header">
+              <span class="activity-type">${a.type}</span>
+              <span class="activity-direction">${a.direction || '-'}</span>
+              <span class="activity-date">${a.occurredAt ? new Date(a.occurredAt).toLocaleString() : '-'}</span>
+            </div>
+            <div class="activity-subject">${a.subject || '-'}</div>
+            <div class="activity-body">${a.body || ''}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : '<h3>Activities</h3><p>No activities yet.</p>';
 
     res.send(`
       <!DOCTYPE html>
@@ -522,6 +622,16 @@ app.get('/view/company/:id', async (req, res) => {
           .back { margin-top: 20px; }
           a { color: #007bff; }
           pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; overflow: auto; }
+          .activities { margin-top: 10px; }
+          .activity { margin: 10px 0; padding: 15px; border-radius: 8px; border-left: 4px solid #ccc; background: #fafafa; }
+          .activity.outbound { border-left-color: #28a745; background: #f0fff4; }
+          .activity.inbound { border-left-color: #007bff; background: #f0f8ff; }
+          .activity-header { display: flex; gap: 10px; margin-bottom: 8px; font-size: 0.85em; }
+          .activity-type { font-weight: bold; background: #e9ecef; padding: 2px 8px; border-radius: 4px; }
+          .activity-direction { color: #666; }
+          .activity-date { color: #999; margin-left: auto; }
+          .activity-subject { font-weight: 600; margin-bottom: 5px; }
+          .activity-body { color: #555; font-size: 0.95em; white-space: pre-wrap; max-height: 200px; overflow: auto; }
         </style>
       </head>
       <body>
@@ -532,6 +642,7 @@ app.get('/view/company/:id', async (req, res) => {
         <div class="field"><span class="label">Domain:</span> <span class="value">${company.domain ? `<a href="https://${company.domain}" target="_blank">${company.domain}</a>` : '-'}</span></div>
         <div class="field"><span class="label">Industry:</span> <span class="value">${company.industry || '-'}</span></div>
         ${company.associations.length ? `<div class="field"><span class="label">Associated Contacts:</span> <span class="value">${company.associations.map(a => `<a href="/view/contact/${a.contact.id}">${a.contact.firstName || ''} ${a.contact.lastName || a.contact.id}</a>`).join(', ')}</span></div>` : ''}
+        ${activitiesHtml}
         <h3>All Data</h3>
         <pre>${JSON.stringify(data, null, 2)}</pre>
         <div class="back"><a href="/">← Back to Dashboard</a></div>
@@ -566,5 +677,6 @@ app.listen(PORT, HOST, () => {
   console.log(`  POST /companies/batch  - Fetch companies (by crmId)`);
   console.log(`  POST /associations     - Create associations`);
   console.log(`  POST /tasks            - Create task`);
+  console.log(`  POST /activities       - Create activity`);
   console.log(`==========================================\n`);
 });
