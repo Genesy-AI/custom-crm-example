@@ -23,6 +23,7 @@ The server will start at `http://localhost:3456`
 - **Companies Management**: Create, update, sync, and batch fetch companies
 - **Associations**: Link contacts to companies
 - **Tasks**: Create and manage tasks from Genesy sequences
+- **Activities**: Capture LinkedIn and email activities synced from Genesy
 - **CRM Record Links**: Deep links to view records directly in the CRM
 - **Web Dashboard**: Visual interface to view and manage all data
 
@@ -214,6 +215,87 @@ curl -X PATCH http://localhost:3456/tasks/task-uuid \
   -H "Content-Type: application/json" \
   -H "x-api-key: test-api-key-123" \
   -d '{ "completed": true }'
+```
+
+### Activities
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/activities` | Create an activity |
+
+Supported `type` values from Genesy:
+
+- `EMAIL`
+- `LINKEDIN`
+- `LINKEDIN_CONNECTION`
+- `LINKEDIN_INMAIL`
+
+#### Create Activity
+
+```bash
+curl -X POST http://localhost:3456/activities \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: test-api-key-123" \
+  -d '{
+    "type": "EMAIL",
+    "subject": "Re: Intro",
+    "body": "<div>Thanks for the quick reply!</div>",
+    "direction": "OUTBOUND",
+    "occurredAt": "2024-12-31T10:00:00Z",
+    "contactId": "contact-uuid",
+    "companyId": "company-uuid",
+    "metadata": { "sequenceIndex": 2 }
+  }'
+```
+
+#### Create LinkedIn Activity
+
+```bash
+curl -X POST http://localhost:3456/activities \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: test-api-key-123" \
+  -d '{
+    "type": "LINKEDIN_INMAIL",
+    "subject": "[FROM Acme] John Doe",
+    "body": "Thanks for reaching out. Happy to chat.",
+    "direction": "INBOUND",
+    "occurredAt": "2024-12-31T10:00:00Z",
+    "contactId": "contact-uuid",
+    "companyId": "company-uuid",
+    "metadata": { "messageId": "linkedin-msg-123", "sequenceIndex": 1 }
+  }'
+```
+
+### Engagement Field Updates
+
+Genesy can update engagement properties on contacts/companies based on your configured mappings. These updates are sent through the existing update endpoints.
+
+```bash
+curl -X PUT http://localhost:3456/contacts \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: test-api-key-123" \
+  -d '{
+    "contacts": [
+      {
+        "crmId": "contact-uuid",
+        "last_engaged_at": "2024-12-31T10:00:00Z"
+      }
+    ]
+  }'
+```
+
+```bash
+curl -X PUT http://localhost:3456/companies \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: test-api-key-123" \
+  -d '{
+    "companies": [
+      {
+        "crmId": "company-uuid",
+        "last_engaged_at": "2024-12-31T10:00:00Z"
+      }
+    ]
+  }'
 ```
 
 ## CRM Record Links
