@@ -284,6 +284,20 @@ curl -X PUT http://localhost:3456/contacts \
   }'
 ```
 
+```bash
+curl -X PUT http://localhost:3456/companies \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: test-api-key-123" \
+  -d '{
+    "companies": [
+      {
+        "crmId": "company-uuid",
+        "last_engaged_at": "2024-12-31T10:00:00Z"
+      }
+    ]
+  }'
+```
+
 ## CRM Record Links
 
 The server provides view pages for contacts and companies that can be linked from Genesy:
