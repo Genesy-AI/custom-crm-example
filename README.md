@@ -241,6 +241,24 @@ curl -X POST http://localhost:3456/activities \
   }'
 ```
 
+### Engagement Field Updates
+
+Genesy can update engagement properties on contacts/companies based on your configured mappings. These updates are sent through the existing update endpoints.
+
+```bash
+curl -X PUT http://localhost:3456/contacts \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: test-api-key-123" \
+  -d '{
+    "contacts": [
+      {
+        "crmId": "contact-uuid",
+        "last_engaged_at": "2024-12-31T10:00:00Z"
+      }
+    ]
+  }'
+```
+
 ## CRM Record Links
 
 The server provides view pages for contacts and companies that can be linked from Genesy:
