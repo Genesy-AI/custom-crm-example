@@ -83,10 +83,11 @@
               <th>Contact</th>
               <th>Company</th>
               <th>Body</th>
+              <th>Metadata</th>
             </tr>
           </thead>
           <tbody id="tableBody">
-            <tr><td colspan="8" class="empty">Loading...</td></tr>
+            <tr><td colspan="9" class="empty">Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -102,12 +103,21 @@
       return input.replace(/<[^>]*>/g, '');
     }
 
+    function formatMetadata(value) {
+      if (!value) return '-';
+      try {
+        return JSON.stringify(JSON.parse(value));
+      } catch {
+        return String(value);
+      }
+    }
+
     async function refresh() {
       activities = await fetch('/api/activities').then(r => r.json());
       document.getElementById('count').textContent = activities.length;
 
       if (activities.length === 0) {
-        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" class="empty">No activities yet. Click "Create Test Activity" to add one.</td></tr>';
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="empty">No activities yet. Click "Create Test Activity" to add one.</td></tr>';
         return;
       }
 
@@ -115,6 +125,7 @@
         const occurredAt = a.occurredAt ? new Date(a.occurredAt).toLocaleString() : '-';
         const body = a.body ? stripHtml(a.body).slice(0, 120) : '-';
         const directionBadge = a.direction ? `<span class="badge badge-green">${a.direction}</span>` : '-';
+        const metadata = formatMetadata(a.metadata);
 
         return `
           <tr>
@@ -126,6 +137,7 @@
             <td class="id-cell">${a.contactId ? a.contactId.substring(0, 8) + '...' : '-'}</td>
             <td class="id-cell">${a.companyId ? a.companyId.substring(0, 8) + '...' : '-'}</td>
             <td>${body}</td>
+            <td class="id-cell">${metadata}</td>
           </tr>
         `;
       }).join('');
@@ -144,6 +156,7 @@
           body: '<div>Thanks for your time today. Let us know your thoughts.</div>',
           direction: 'OUTBOUND',
           occurredAt: new Date().toISOString(),
+          metadata: { messageId: 'example-message-id', sequenceIndex: 1 },
         })
       });
 
