@@ -59,3 +59,18 @@ model Task {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
+
+model Activity {
+  id         String    @id @default(uuid())
+  type       String    // EMAIL, LINKEDIN, LINKEDIN_CONNECTION, LINKEDIN_INMAIL
+  subject    String?
+  body       String?
+  direction  String?   // INBOUND, OUTBOUND
+  ownerId    String?
+  occurredAt DateTime?
+  contactId  String?
+  companyId  String?
+  metadata   String?   // JSON string for extra fields
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
