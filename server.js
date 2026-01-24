@@ -572,6 +572,139 @@ app.get('/view/contact/:id', async (req, res) => {
   }
 });
 
+// GET /view/task/:id - View a task record
+app.get('/view/task/:id', async (req, res) => {
+  try {
+    const task = await prisma.task.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!task) {
+      return res.status(404).send('<h1>Task not found</h1>');
+    }
+
+    // Fetch related contact if exists
+    let contact = null;
+    if (task.contactId) {
+      contact = await prisma.contact.findUnique({
+        where: { id: task.contactId },
+      });
+    }
+
+    // Fetch related company if exists
+    let company = null;
+    if (task.companyId) {
+      company = await prisma.company.findUnique({
+        where: { id: task.companyId },
+      });
+    }
+
+    const contactHtml = contact ? `
+      <div class="related-record">
+        <h3>Related Contact</h3>
+        <div class="field"><span class="label">Name:</span> <span class="value"><a href="/view/contact/${contact.id}">${contact.firstName || ''} ${contact.lastName || ''}</a></span></div>
+        <div class="field"><span class="label">Email:</span> <span class="value">${contact.email || '-'}</span></div>
+        <div class="field"><span class="label">Phone:</span> <span class="value">${contact.phone || '-'}</span></div>
+        <div class="field"><span class="label">Company:</span> <span class="value">${contact.company || '-'}</span></div>
+        <div class="field"><span class="label">Title:</span> <span class="value">${contact.title || '-'}</span></div>
+      </div>
+    ` : '';
+
+    const companyHtml = company ? `
+      <div class="related-record">
+        <h3>Related Company</h3>
+        <div class="field"><span class="label">Name:</span> <span class="value"><a href="/view/company/${company.id}">${company.name || '-'}</a></span></div>
+        <div class="field"><span class="label">Domain:</span> <span class="value">${company.domain ? `<a href="https://${company.domain}" target="_blank">${company.domain}</a>` : '-'}</span></div>
+        <div class="field"><span class="label">Industry:</span> <span class="value">${company.industry || '-'}</span></div>
+      </div>
+    ` : '';
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Task: ${task.subject}</title>
+        <style>
+          body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+          h1 { color: #333; }
+          h3 { color: #555; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+          .field { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+          .label { font-weight: bold; color: #666; }
+          .value { color: #333; }
+          .back { margin-top: 20px; }
+          a { color: #007bff; }
+          .status { display: inline-block; padding: 5px 12px; border-radius: 20px; font-weight: bold; }
+          .status.completed { background: #d4edda; color: #155724; }
+          .status.pending { background: #fff3cd; color: #856404; }
+          .related-record { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #007bff; }
+          .related-record h3 { margin-top: 0; border: none; padding: 0; }
+          .related-record .field { background: #fff; }
+          .complete-form { margin-top: 20px; }
+          .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+          .btn-complete { background: #28a745; color: white; }
+          .btn-complete:hover { background: #218838; }
+          .btn-reopen { background: #ffc107; color: #333; }
+          .btn-reopen:hover { background: #e0a800; }
+          .description { white-space: pre-wrap; background: #f5f5f5; padding: 15px; border-radius: 5px; }
+        </style>
+      </head>
+      <body>
+        <h1>Task Record</h1>
+        <div class="field">
+          <span class="label">Status:</span>
+          <span class="status ${task.completed ? 'completed' : 'pending'}">${task.completed ? 'Completed' : 'Pending'}</span>
+        </div>
+        <div class="field"><span class="label">Task ID:</span> <span class="value">${task.id}</span></div>
+        <div class="field"><span class="label">Subject:</span> <span class="value">${task.subject}</span></div>
+        <div class="field"><span class="label">Type:</span> <span class="value">${task.type || '-'}</span></div>
+        <div class="field"><span class="label">Owner ID:</span> <span class="value">${task.ownerId || '-'}</span></div>
+        <div class="field"><span class="label">Due Date:</span> <span class="value">${task.dueDate ? new Date(task.dueDate).toLocaleString() : '-'}</span></div>
+        <div class="field"><span class="label">Created:</span> <span class="value">${new Date(task.createdAt).toLocaleString()}</span></div>
+        ${task.completed ? `<div class="field"><span class="label">Completed At:</span> <span class="value">${task.completedAt ? new Date(task.completedAt).toLocaleString() : '-'}</span></div>` : ''}
+        ${task.description ? `<h3>Description</h3><div class="description">${task.description}</div>` : ''}
+        ${contactHtml}
+        ${companyHtml}
+        <div class="complete-form">
+          <form action="/view/task/${task.id}/toggle" method="POST">
+            <button type="submit" class="btn ${task.completed ? 'btn-reopen' : 'btn-complete'}">
+              ${task.completed ? 'Reopen Task' : 'Mark as Complete'}
+            </button>
+          </form>
+        </div>
+        <div class="back"><a href="/">← Back to Dashboard</a></div>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    res.status(500).send(`<h1>Error: ${error.message}</h1>`);
+  }
+});
+
+// POST /view/task/:id/toggle - Toggle task completion status
+app.post('/view/task/:id/toggle', async (req, res) => {
+  try {
+    const task = await prisma.task.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!task) {
+      return res.status(404).send('<h1>Task not found</h1>');
+    }
+
+    await prisma.task.update({
+      where: { id: req.params.id },
+      data: {
+        completed: !task.completed,
+        completedAt: !task.completed ? new Date() : null,
+      },
+    });
+
+    res.redirect(`/view/task/${req.params.id}`);
+  } catch (error) {
+    res.status(500).send(`<h1>Error: ${error.message}</h1>`);
+  }
+});
+
 // GET /view/company/:id - View a company record
 app.get('/view/company/:id', async (req, res) => {
   try {
