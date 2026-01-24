@@ -17,6 +17,7 @@ model Contact {
   company      String?
   title        String?
   linkedinUrl  String?
+  ownerId      String?  // Owner/assignee ID from /users
   data         String?  // JSON string for extra fields
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -29,6 +30,7 @@ model Company {
   name        String?
   domain      String?
   industry    String?
+  ownerId     String?  // Owner/assignee ID from /users
   data        String?  // JSON string for extra fields
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

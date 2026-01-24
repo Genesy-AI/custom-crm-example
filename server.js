@@ -84,13 +84,14 @@ app.post('/contacts', async (req, res) => {
           company: contact.company,
           title: contact.title,
           linkedinUrl: contact.linkedinUrl,
+          ownerId: contact.ownerId, // Store owner ID if provided
           data: JSON.stringify(contact),
         },
       });
       results.push({ externalId: contact.externalId, crmId: created.id });
     }
 
-    console.log(`Created ${results.length} contacts`);
+    console.log(`Created ${results.length} contacts${contacts[0]?.ownerId ? ` (owner: ${contacts[0].ownerId})` : ''}`);
     res.json({ results });
   } catch (error) {
     console.error('Error creating contacts:', error);
@@ -106,7 +107,7 @@ app.put('/contacts', async (req, res) => {
 
     for (const contact of contacts) {
       try {
-        await prisma.contact.update({
+        const updated = await prisma.contact.update({
           where: { id: contact.crmId },
           data: {
             email: contact.email,
@@ -116,10 +117,17 @@ app.put('/contacts', async (req, res) => {
             company: contact.company,
             title: contact.title,
             linkedinUrl: contact.linkedinUrl,
+            // Only update ownerId if provided in the request
+            ...(contact.ownerId !== undefined && { ownerId: contact.ownerId }),
             data: JSON.stringify(contact),
           },
         });
-        results.push({ crmId: contact.crmId, success: true });
+        // Return current properties including ownerId for sync back
+        results.push({
+          crmId: contact.crmId,
+          success: true,
+          properties: { ownerId: updated.ownerId },
+        });
       } catch (e) {
         results.push({ crmId: contact.crmId, success: false });
       }
@@ -145,10 +153,11 @@ app.post('/contacts/sync', async (req, res) => {
       });
 
       if (existing) {
+        const data = existing.data ? JSON.parse(existing.data) : {};
         results.push({
           externalId: contact.externalId,
           crmId: existing.id,
-          properties: existing.data ? JSON.parse(existing.data) : {},
+          properties: { ...data, ownerId: existing.ownerId },
         });
       }
     }
@@ -169,18 +178,22 @@ app.post('/contacts/batch', async (req, res) => {
       where: { id: { in: ids } },
     });
 
-    const results = contacts.map(c => ({
-      id: c.id,
-      externalId: c.externalId,
-      email: c.email,
-      firstName: c.firstName,
-      lastName: c.lastName,
-      phone: c.phone,
-      company: c.company,
-      title: c.title,
-      linkedinUrl: c.linkedinUrl,
-      properties: c.data ? JSON.parse(c.data) : {},
-    }));
+    const results = contacts.map(c => {
+      const data = c.data ? JSON.parse(c.data) : {};
+      return {
+        id: c.id,
+        externalId: c.externalId,
+        email: c.email,
+        firstName: c.firstName,
+        lastName: c.lastName,
+        phone: c.phone,
+        company: c.company,
+        title: c.title,
+        linkedinUrl: c.linkedinUrl,
+        ownerId: c.ownerId,
+        properties: { ...data, ownerId: c.ownerId },
+      };
+    });
 
     console.log(`Batch fetch contacts: ${results.length}/${ids.length} found`);
     res.json({ results });
@@ -205,13 +218,14 @@ app.post('/companies', async (req, res) => {
           name: company.name,
           domain: company.domain,
           industry: company.industry,
+          ownerId: company.ownerId, // Store owner ID if provided
           data: JSON.stringify(company),
         },
       });
       results.push({ externalId: company.externalId, crmId: created.id });
     }
 
-    console.log(`Created ${results.length} companies`);
+    console.log(`Created ${results.length} companies${companies[0]?.ownerId ? ` (owner: ${companies[0].ownerId})` : ''}`);
     res.json({ results });
   } catch (error) {
     console.error('Error creating companies:', error);
@@ -227,16 +241,23 @@ app.put('/companies', async (req, res) => {
 
     for (const company of companies) {
       try {
-        await prisma.company.update({
+        const updated = await prisma.company.update({
           where: { id: company.crmId },
           data: {
             name: company.name,
             domain: company.domain,
             industry: company.industry,
+            // Only update ownerId if provided in the request
+            ...(company.ownerId !== undefined && { ownerId: company.ownerId }),
             data: JSON.stringify(company),
           },
         });
-        results.push({ crmId: company.crmId, success: true });
+        // Return current properties including ownerId for sync back
+        results.push({
+          crmId: company.crmId,
+          success: true,
+          properties: { ownerId: updated.ownerId },
+        });
       } catch (e) {
         results.push({ crmId: company.crmId, success: false });
       }
@@ -262,10 +283,11 @@ app.post('/companies/sync', async (req, res) => {
       });
 
       if (existing) {
+        const data = existing.data ? JSON.parse(existing.data) : {};
         results.push({
           externalId: company.externalId,
           crmId: existing.id,
-          properties: existing.data ? JSON.parse(existing.data) : {},
+          properties: { ...data, ownerId: existing.ownerId },
         });
       }
     }
@@ -286,14 +308,18 @@ app.post('/companies/batch', async (req, res) => {
       where: { id: { in: ids } },
     });
 
-    const results = companies.map(c => ({
-      id: c.id,
-      externalId: c.externalId,
-      name: c.name,
-      domain: c.domain,
-      industry: c.industry,
-      properties: c.data ? JSON.parse(c.data) : {},
-    }));
+    const results = companies.map(c => {
+      const data = c.data ? JSON.parse(c.data) : {};
+      return {
+        id: c.id,
+        externalId: c.externalId,
+        name: c.name,
+        domain: c.domain,
+        industry: c.industry,
+        ownerId: c.ownerId,
+        properties: { ...data, ownerId: c.ownerId },
+      };
+    });
 
     console.log(`Batch fetch companies: ${results.length}/${ids.length} found`);
     res.json({ results });
