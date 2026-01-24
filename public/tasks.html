@@ -44,6 +44,8 @@
     .subject-cell { font-weight: 500; }
     .subject-cell a { color: #1e293b; text-decoration: none; }
     .subject-cell a:hover { color: #3b82f6; text-decoration: underline; }
+    .link { color: #3b82f6; text-decoration: none; }
+    .link:hover { text-decoration: underline; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
     .badge-green { background: #dcfce7; color: #15803d; }
     .badge-yellow { background: #fef3c7; color: #b45309; }
@@ -127,8 +129,8 @@
             <td>${t.type ? `<span class="badge badge-gray">${t.type}</span>` : '-'}</td>
             <td>${isOverdue ? `<span class="badge badge-red">${dueDateStr}</span>` : dueDateStr}</td>
             <td>${t.completed ? '<span class="badge badge-green">Completed</span>' : '<span class="badge badge-yellow">Pending</span>'}</td>
-            <td class="id-cell">${t.contactId ? t.contactId.substring(0, 8) + '...' : '-'}</td>
-            <td class="id-cell">${t.companyId ? t.companyId.substring(0, 8) + '...' : '-'}</td>
+            <td>${t.contact ? `<a href="/view/contact/${t.contact.id}" class="link">${t.contact.firstName || ''} ${t.contact.lastName || ''}</a>` : '-'}</td>
+            <td>${t.company ? `<a href="/view/company/${t.company.id}" class="link">${t.company.name || 'Unknown'}</a>` : '-'}</td>
             <td>
               <a href="/view/task/${t.id}" class="btn btn-sm btn-primary">View</a>
               ${!t.completed ? `<button class="btn btn-sm btn-warning" onclick="completeTask('${t.id}')">Complete</button>` : ''}
