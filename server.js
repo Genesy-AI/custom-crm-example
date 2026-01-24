@@ -14,7 +14,7 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:3456';
 const CONTACT_LINK_TEMPLATE = `${BASE_URL}/view/contact/{{crmId}}`;
 const COMPANY_LINK_TEMPLATE = `${BASE_URL}/view/company/{{crmId}}`;
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Logging middleware
