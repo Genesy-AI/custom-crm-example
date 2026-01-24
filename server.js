@@ -455,8 +455,34 @@ app.get('/api/companies', async (req, res) => {
 });
 
 app.get('/api/tasks', async (req, res) => {
-  const tasks = await prisma.task.findMany();
-  res.json(tasks);
+  const tasks = await prisma.task.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // Fetch related contacts and companies
+  const contactIds = tasks.filter(t => t.contactId).map(t => t.contactId);
+  const companyIds = tasks.filter(t => t.companyId).map(t => t.companyId);
+
+  const contacts = contactIds.length ? await prisma.contact.findMany({
+    where: { id: { in: contactIds } },
+    select: { id: true, firstName: true, lastName: true, email: true },
+  }) : [];
+
+  const companies = companyIds.length ? await prisma.company.findMany({
+    where: { id: { in: companyIds } },
+    select: { id: true, name: true },
+  }) : [];
+
+  const contactMap = Object.fromEntries(contacts.map(c => [c.id, c]));
+  const companyMap = Object.fromEntries(companies.map(c => [c.id, c]));
+
+  const tasksWithRelations = tasks.map(t => ({
+    ...t,
+    contact: t.contactId ? contactMap[t.contactId] : null,
+    company: t.companyId ? companyMap[t.companyId] : null,
+  }));
+
+  res.json(tasksWithRelations);
 });
 
 app.get('/api/activities', async (req, res) => {
