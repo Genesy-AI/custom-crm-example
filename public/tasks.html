@@ -42,6 +42,8 @@
     tr.completed td:last-child { text-decoration: none; }
     .id-cell { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #64748b; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
     .subject-cell { font-weight: 500; }
+    .subject-cell a { color: #1e293b; text-decoration: none; }
+    .subject-cell a:hover { color: #3b82f6; text-decoration: underline; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
     .badge-green { background: #dcfce7; color: #15803d; }
     .badge-yellow { background: #fef3c7; color: #b45309; }
@@ -121,7 +123,7 @@
         return `
           <tr class="${t.completed ? 'completed' : ''}">
             <td class="id-cell" title="${t.id}">${t.id.substring(0, 8)}...</td>
-            <td class="subject-cell">${t.subject}</td>
+            <td class="subject-cell"><a href="/view/task/${t.id}">${t.subject}</a></td>
             <td>${t.type ? `<span class="badge badge-gray">${t.type}</span>` : '-'}</td>
             <td>${isOverdue ? `<span class="badge badge-red">${dueDateStr}</span>` : dueDateStr}</td>
             <td>${t.completed ? '<span class="badge badge-green">Completed</span>' : '<span class="badge badge-yellow">Pending</span>'}</td>

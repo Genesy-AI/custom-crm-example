@@ -504,7 +504,29 @@ app.get('/view/contact/:id', async (req, res) => {
       orderBy: { occurredAt: 'desc' },
     });
 
+    const tasks = await prisma.task.findMany({
+      where: { contactId: req.params.id },
+      orderBy: { createdAt: 'desc' },
+    });
+
     const data = contact.data ? JSON.parse(contact.data) : {};
+
+    const tasksHtml = tasks.length ? `
+      <h3>Tasks (${tasks.length})</h3>
+      <div class="tasks">
+        ${tasks.map(t => `
+          <div class="task ${t.completed ? 'completed' : 'pending'}">
+            <div class="task-header">
+              <span class="task-status">${t.completed ? '✓' : '○'}</span>
+              <a href="/view/task/${t.id}" class="task-subject">${t.subject}</a>
+              <span class="task-type">${t.type || '-'}</span>
+              <span class="task-date">${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : '-'}</span>
+            </div>
+            ${t.description ? `<div class="task-description">${t.description}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : '<h3>Tasks</h3><p>No tasks yet.</p>';
 
     const activitiesHtml = activities.length ? `
       <h3>Activities (${activities.length})</h3>
@@ -537,6 +559,16 @@ app.get('/view/contact/:id', async (req, res) => {
           .back { margin-top: 20px; }
           a { color: #007bff; }
           pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; overflow: auto; }
+          .tasks { margin-top: 10px; }
+          .task { margin: 10px 0; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; background: #fffbeb; }
+          .task.completed { border-left-color: #28a745; background: #f0fff4; opacity: 0.8; }
+          .task.completed .task-subject { text-decoration: line-through; }
+          .task-header { display: flex; gap: 10px; align-items: center; font-size: 0.95em; }
+          .task-status { font-size: 1.1em; }
+          .task-subject { font-weight: 600; flex: 1; }
+          .task-type { font-size: 0.85em; background: #e9ecef; padding: 2px 8px; border-radius: 4px; }
+          .task-date { color: #666; font-size: 0.85em; }
+          .task-description { margin-top: 8px; color: #555; font-size: 0.9em; }
           .activities { margin-top: 10px; }
           .activity { margin: 10px 0; padding: 15px; border-radius: 8px; border-left: 4px solid #ccc; background: #fafafa; }
           .activity.outbound { border-left-color: #28a745; background: #f0fff4; }
@@ -560,6 +592,7 @@ app.get('/view/contact/:id', async (req, res) => {
         <div class="field"><span class="label">Title:</span> <span class="value">${contact.title || '-'}</span></div>
         <div class="field"><span class="label">LinkedIn:</span> <span class="value">${contact.linkedinUrl ? `<a href="${contact.linkedinUrl}" target="_blank">${contact.linkedinUrl}</a>` : '-'}</span></div>
         ${contact.associations.length ? `<div class="field"><span class="label">Associated Companies:</span> <span class="value">${contact.associations.map(a => `<a href="/view/company/${a.company.id}">${a.company.name || a.company.id}</a>`).join(', ')}</span></div>` : ''}
+        ${tasksHtml}
         ${activitiesHtml}
         <h3>All Data</h3>
         <pre>${JSON.stringify(data, null, 2)}</pre>
@@ -722,7 +755,29 @@ app.get('/view/company/:id', async (req, res) => {
       orderBy: { occurredAt: 'desc' },
     });
 
+    const tasks = await prisma.task.findMany({
+      where: { companyId: req.params.id },
+      orderBy: { createdAt: 'desc' },
+    });
+
     const data = company.data ? JSON.parse(company.data) : {};
+
+    const tasksHtml = tasks.length ? `
+      <h3>Tasks (${tasks.length})</h3>
+      <div class="tasks">
+        ${tasks.map(t => `
+          <div class="task ${t.completed ? 'completed' : 'pending'}">
+            <div class="task-header">
+              <span class="task-status">${t.completed ? '✓' : '○'}</span>
+              <a href="/view/task/${t.id}" class="task-subject">${t.subject}</a>
+              <span class="task-type">${t.type || '-'}</span>
+              <span class="task-date">${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : '-'}</span>
+            </div>
+            ${t.description ? `<div class="task-description">${t.description}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : '<h3>Tasks</h3><p>No tasks yet.</p>';
 
     const activitiesHtml = activities.length ? `
       <h3>Activities (${activities.length})</h3>
@@ -755,6 +810,16 @@ app.get('/view/company/:id', async (req, res) => {
           .back { margin-top: 20px; }
           a { color: #007bff; }
           pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; overflow: auto; }
+          .tasks { margin-top: 10px; }
+          .task { margin: 10px 0; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; background: #fffbeb; }
+          .task.completed { border-left-color: #28a745; background: #f0fff4; opacity: 0.8; }
+          .task.completed .task-subject { text-decoration: line-through; }
+          .task-header { display: flex; gap: 10px; align-items: center; font-size: 0.95em; }
+          .task-status { font-size: 1.1em; }
+          .task-subject { font-weight: 600; flex: 1; }
+          .task-type { font-size: 0.85em; background: #e9ecef; padding: 2px 8px; border-radius: 4px; }
+          .task-date { color: #666; font-size: 0.85em; }
+          .task-description { margin-top: 8px; color: #555; font-size: 0.9em; }
           .activities { margin-top: 10px; }
           .activity { margin: 10px 0; padding: 15px; border-radius: 8px; border-left: 4px solid #ccc; background: #fafafa; }
           .activity.outbound { border-left-color: #28a745; background: #f0fff4; }
@@ -775,6 +840,7 @@ app.get('/view/company/:id', async (req, res) => {
         <div class="field"><span class="label">Domain:</span> <span class="value">${company.domain ? `<a href="https://${company.domain}" target="_blank">${company.domain}</a>` : '-'}</span></div>
         <div class="field"><span class="label">Industry:</span> <span class="value">${company.industry || '-'}</span></div>
         ${company.associations.length ? `<div class="field"><span class="label">Associated Contacts:</span> <span class="value">${company.associations.map(a => `<a href="/view/contact/${a.contact.id}">${a.contact.firstName || ''} ${a.contact.lastName || a.contact.id}</a>`).join(', ')}</span></div>` : ''}
+        ${tasksHtml}
         ${activitiesHtml}
         <h3>All Data</h3>
         <pre>${JSON.stringify(data, null, 2)}</pre>
