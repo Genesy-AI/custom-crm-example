@@ -50,6 +50,21 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ============== USERS (Optional - for owner assignment) ==============
+// Sample users for testing owner assignment in exports, tasks, and activities
+const SAMPLE_USERS = [
+  { id: 'user-1', name: 'John Smith', email: 'john@example.com' },
+  { id: 'user-2', name: 'Jane Doe', email: 'jane@example.com' },
+  { id: 'user-3', name: 'Sales Team', email: 'sales@example.com' },
+];
+
+// GET /users - List users/owners for assignment
+// This endpoint is optional - return 404 to disable owner selection in Genesy
+app.get('/users', (req, res) => {
+  console.log('Returning users list');
+  res.json(SAMPLE_USERS);
+});
+
 // ============== CONTACTS ==============
 
 // POST /contacts - Create contacts
@@ -892,6 +907,7 @@ app.listen(PORT, HOST, () => {
   console.log(`API Header:   ${API_KEY_HEADER}`);
   console.log(`\nEndpoints:`);
   console.log(`  GET  /health           - Health check`);
+  console.log(`  GET  /users            - List users/owners (optional)`);
   console.log(`  POST /contacts         - Create contacts`);
   console.log(`  PUT  /contacts         - Update contacts`);
   console.log(`  POST /contacts/sync    - Sync contacts (by externalId)`);
