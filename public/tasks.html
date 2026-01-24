@@ -130,7 +130,8 @@
             <td class="id-cell">${t.contactId ? t.contactId.substring(0, 8) + '...' : '-'}</td>
             <td class="id-cell">${t.companyId ? t.companyId.substring(0, 8) + '...' : '-'}</td>
             <td>
-              ${!t.completed ? `<button class="btn btn-sm btn-warning" onclick="completeTask('${t.id}')">Complete</button>` : '<span class="badge badge-green">Done</span>'}
+              <a href="/view/task/${t.id}" class="btn btn-sm btn-primary">View</a>
+              ${!t.completed ? `<button class="btn btn-sm btn-warning" onclick="completeTask('${t.id}')">Complete</button>` : ''}
             </td>
           </tr>
         `;
