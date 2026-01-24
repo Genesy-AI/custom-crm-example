@@ -58,6 +58,13 @@ const SAMPLE_USERS = [
   { id: 'user-3', name: 'Sales Team', email: 'sales@example.com' },
 ];
 
+// Helper to resolve ownerId to user name
+function getOwnerName(ownerId) {
+  if (!ownerId) return null;
+  const user = SAMPLE_USERS.find(u => u.id === ownerId);
+  return user ? user.name : null;
+}
+
 // GET /users - List users/owners for assignment
 // This endpoint is optional - return 404 to disable owner selection in Genesy
 app.get('/users', (req, res) => {
@@ -485,14 +492,24 @@ app.get('/api/contacts', async (req, res) => {
   const contacts = await prisma.contact.findMany({
     include: { associations: { include: { company: true } } },
   });
-  res.json(contacts);
+  // Add owner name to each contact
+  const contactsWithOwner = contacts.map(c => ({
+    ...c,
+    ownerName: getOwnerName(c.ownerId),
+  }));
+  res.json(contactsWithOwner);
 });
 
 app.get('/api/companies', async (req, res) => {
   const companies = await prisma.company.findMany({
     include: { associations: { include: { contact: true } } },
   });
-  res.json(companies);
+  // Add owner name to each company
+  const companiesWithOwner = companies.map(c => ({
+    ...c,
+    ownerName: getOwnerName(c.ownerId),
+  }));
+  res.json(companiesWithOwner);
 });
 
 app.get('/api/tasks', async (req, res) => {
@@ -521,6 +538,7 @@ app.get('/api/tasks', async (req, res) => {
     ...t,
     contact: t.contactId ? contactMap[t.contactId] : null,
     company: t.companyId ? companyMap[t.companyId] : null,
+    ownerName: getOwnerName(t.ownerId),
   }));
 
   res.json(tasksWithRelations);
@@ -530,7 +548,12 @@ app.get('/api/activities', async (req, res) => {
   const activities = await prisma.activity.findMany({
     orderBy: { occurredAt: 'desc' },
   });
-  res.json(activities);
+  // Add owner name to each activity
+  const activitiesWithOwner = activities.map(a => ({
+    ...a,
+    ownerName: getOwnerName(a.ownerId),
+  }));
+  res.json(activitiesWithOwner);
 });
 
 app.delete('/api/reset', async (req, res) => {
@@ -658,6 +681,7 @@ app.get('/view/contact/:id', async (req, res) => {
         <div class="field"><span class="label">Company:</span> <span class="value">${contact.company || '-'}</span></div>
         <div class="field"><span class="label">Title:</span> <span class="value">${contact.title || '-'}</span></div>
         <div class="field"><span class="label">LinkedIn:</span> <span class="value">${contact.linkedinUrl ? `<a href="${contact.linkedinUrl}" target="_blank">${contact.linkedinUrl}</a>` : '-'}</span></div>
+        <div class="field"><span class="label">Owner:</span> <span class="value">${getOwnerName(contact.ownerId) || contact.ownerId || '-'}</span></div>
         ${contact.associations.length ? `<div class="field"><span class="label">Associated Companies:</span> <span class="value">${contact.associations.map(a => `<a href="/view/company/${a.company.id}">${a.company.name || a.company.id}</a>`).join(', ')}</span></div>` : ''}
         ${tasksHtml}
         ${activitiesHtml}
@@ -757,7 +781,7 @@ app.get('/view/task/:id', async (req, res) => {
         <div class="field"><span class="label">Task ID:</span> <span class="value">${task.id}</span></div>
         <div class="field"><span class="label">Subject:</span> <span class="value">${task.subject}</span></div>
         <div class="field"><span class="label">Type:</span> <span class="value">${task.type || '-'}</span></div>
-        <div class="field"><span class="label">Owner ID:</span> <span class="value">${task.ownerId || '-'}</span></div>
+        <div class="field"><span class="label">Owner:</span> <span class="value">${getOwnerName(task.ownerId) || task.ownerId || '-'}</span></div>
         <div class="field"><span class="label">Due Date:</span> <span class="value">${task.dueDate ? new Date(task.dueDate).toLocaleString() : '-'}</span></div>
         <div class="field"><span class="label">Created:</span> <span class="value">${new Date(task.createdAt).toLocaleString()}</span></div>
         ${task.completed ? `<div class="field"><span class="label">Completed At:</span> <span class="value">${task.completedAt ? new Date(task.completedAt).toLocaleString() : '-'}</span></div>` : ''}
@@ -906,6 +930,7 @@ app.get('/view/company/:id', async (req, res) => {
         <div class="field"><span class="label">Name:</span> <span class="value">${company.name || '-'}</span></div>
         <div class="field"><span class="label">Domain:</span> <span class="value">${company.domain ? `<a href="https://${company.domain}" target="_blank">${company.domain}</a>` : '-'}</span></div>
         <div class="field"><span class="label">Industry:</span> <span class="value">${company.industry || '-'}</span></div>
+        <div class="field"><span class="label">Owner:</span> <span class="value">${getOwnerName(company.ownerId) || company.ownerId || '-'}</span></div>
         ${company.associations.length ? `<div class="field"><span class="label">Associated Contacts:</span> <span class="value">${company.associations.map(a => `<a href="/view/contact/${a.contact.id}">${a.contact.firstName || ''} ${a.contact.lastName || a.contact.id}</a>`).join(', ')}</span></div>` : ''}
         ${tasksHtml}
         ${activitiesHtml}
